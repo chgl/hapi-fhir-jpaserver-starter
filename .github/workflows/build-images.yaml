@@ -26,7 +26,6 @@ jobs:
           images: ${{ env.IMAGES }}
           tags: |
             type=match,pattern=image-(.*),group=1,enable=${{github.event_name != 'pull_request'}}
-           
 
       - name: Container meta for tomcat image
         id: docker_tomcat_meta
@@ -70,6 +69,13 @@ jobs:
           labels: ${{ steps.docker_meta.outputs.labels }}
           platforms: ${{ env.PLATFORMS }}
           target: default
+          outputs: type=docker,dest=/tmp/hapi-fhir-jpaserver-image.tar
+
+      - name: Upload the built default image as an artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: hapi-fhir-jpaserver-image
+          path: /tmp/hapi-fhir-jpaserver-image.tar
 
       - name: Build and push tomcat image
         id: docker_build_tomcat
@@ -82,3 +88,36 @@ jobs:
           labels: ${{ steps.docker_tomcat_meta.outputs.labels }}
           platforms: ${{ env.PLATFORMS }}
           target: tomcat
+
+  e2e-tests:
+    needs: build
+    strategy:
+      matrix:
+        database: [h2, postgres]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: hapi-fhir-jpaserver-image
+          path: /tmp
+
+      - name: Load image
+        run: |
+          docker load --input /tmp/hapi-fhir-jpaserver-image.tar
+          docker image ls -a
+
+      - name: Run E2E tests using ${{ matrix.database }}
+        env:
+          HAPI_FHIR_SERVER_IMAGE_TAG: "${{ needs.docker_meta.outputs.tags }}"
+        run: |
+          docker compose -f tests/docker-compose.yaml -f tests/docker-compose.postgres.yaml run test
+
+      - name: Print E2E logs
+        if: always()
+        run: |
+          docker compose -f tests/docker-compose.yaml -f tests/docker-compose.postgres.yaml logs
+          docker compose -f tests/docker-compose.yaml -f tests/docker-compose.postgres.yaml down --volumes --remove-orphans

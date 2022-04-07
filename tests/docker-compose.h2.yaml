@@ -1,0 +1,8 @@
+services:
+  hapi-fhir-jpaserver:
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:h2:file:./target/database/h2"
+      SPRING_DATASOURCE_USERNAME: "sa"
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_DATASOURCE_DRIVERCLASSNAME: "org.h2.Driver"
+      spring.jpa.properties.hibernate.dialect: "ca.uhn.fhir.jpa.model.dialect.HapiFhirH2Dialect"

@@ -1,0 +1,16 @@
+services:
+  hapi-fhir-jpaserver:
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-db:5432/hapi"
+      SPRING_DATASOURCE_USERNAME: "postgres"
+      SPRING_DATASOURCE_PASSWORD: "postgres"
+      SPRING_DATASOURCE_DRIVERCLASSNAME: "org.postgresql.Driver"
+      spring.jpa.properties.hibernate.dialect: "ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgres94Dialect"
+    depends_on:
+      - postgres-db
+
+  postgres-db:
+    image: docker.io/postgres:14.2
+    environment:
+      POSTGRES_DB: hapi
+      POSTGRES_PASSWORD: postgres

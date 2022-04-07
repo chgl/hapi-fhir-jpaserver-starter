@@ -1,0 +1,11 @@
+services:
+  hapi-fhir-jpaserver:
+    image: docker.io/hapiproject/hapi:${HAPI_FHIR_SERVER_IMAGE_TAG:-v5.7.0}
+    restart: on-failure
+
+  test:
+    image: docker.io/curlimages/curl:7.77.0
+    command: >
+      -X GET --fail --retry-connrefuse --connect-timeout 30 --max-time 120 --retry 10 --retry-delay 15 http://hapi-fhir-jpaserver2:8080/fhir/Patient
+    depends_on:
+      - hapi-fhir-jpaserver
