@@ -6,26 +6,30 @@ entries:
         # When using the list of objects option the valid supported kinds are
         # added, changed, deprecated, removed, fixed, and security.
         - kind: changed
-          description: updated image version to v6.1.0
+          description: updated HAPI FHIR JPA Server app image version to v6.2.1
         - kind: changed
-          description: added section on configuring the chart for distributed tracing to the README.md
+          description: |
+            Reduced `startupProbe.initialDelaySeconds` to a more realistic `30` from `60`.
+            This should allow the server to become ready quicker and recover from failures faster.
+        - kind: changed
+          description: "⚠️ BREAKING CHANGE: updated included postgresql chart to v12, which is based on PostgreSQL 15.1"
       artifacthub.io/license: Apache-2.0
     apiVersion: v2
-    appVersion: v6.x
-    created: "2022-11-21T21:51:25.237185133Z"
+    appVersion: 6.2.1
+    created: "2023-01-06T11:21:12.848816047Z"
     dependencies:
     - condition: postgresql.enabled
       name: postgresql
       repository: https://charts.bitnami.com/bitnami
-      version: 11.8.1
+      version: 12.1.2
     description: A Helm chart for deploying the HAPI FHIR JPA server starter on Kubernetes.
-    digest: cf2590591bf3a606d7eda9660e511d206f43ad1417428085728bacbdb3fa5c94
+    digest: aae4e3d34e060c3862115b4f3893704297de5e7f251aa856800662ef8bed357a
     home: https://github.com/hapifhir/hapi-fhir-jpaserver-starter
     name: hapi-fhir-jpaserver
     sources:
     - https://github.com/hapifhir/hapi-fhir-jpaserver-starter
     type: application
     urls:
-    - https://github.com/chgl/hapi-fhir-jpaserver-starter/releases/download/helm-v0.10.1/hapi-fhir-jpaserver-0.10.1.tgz
-    version: 0.10.1
-generated: "2022-11-21T21:51:25.237194333Z"
+    - https://github.com/chgl/hapi-fhir-jpaserver-starter/releases/download/helm-v0.11.0/hapi-fhir-jpaserver-0.11.0.tgz
+    version: 0.11.0
+generated: "2023-01-06T11:21:12.848825647Z"
