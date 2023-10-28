@@ -31,6 +31,37 @@ entries:
         # When using the list of objects option the valid supported kinds are
         # added, changed, deprecated, removed, fixed, and security.
         - kind: added
+          description: updated starter image to 6.8.3
+        - kind: fixed
+          description: incorrect handling of existing secret database config
+        - kind: added
+          description: support for using a non-admin user for the postgres database
+        - kind: added
+          description: ability to create a dedicated ServiceAccount
+      artifacthub.io/license: Apache-2.0
+    apiVersion: v2
+    appVersion: 6.8.3
+    created: "2023-10-28T15:22:44.713850405Z"
+    dependencies:
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 12.5.6
+    description: A Helm chart for deploying the HAPI FHIR JPA server starter on Kubernetes.
+    digest: 7210a89180e84ca955bf5c2fac44987b8c252714f42d86b0f237306fb985b06a
+    home: https://github.com/hapifhir/hapi-fhir-jpaserver-starter
+    name: hapi-fhir-jpaserver
+    sources:
+    - https://github.com/hapifhir/hapi-fhir-jpaserver-starter
+    type: application
+    urls:
+    - https://github.com/chgl/hapi-fhir-jpaserver-starter/releases/download/helm-v0.14.0/hapi-fhir-jpaserver-0.14.0.tgz
+    version: 0.14.0
+  - annotations:
+      artifacthub.io/changes: |
+        # When using the list of objects option the valid supported kinds are
+        # added, changed, deprecated, removed, fixed, and security.
+        - kind: added
           description: allow specifying application properties via yaml config
         - kind: added
           description: allow setting resource limits and requests for the Helm test pods
@@ -113,4 +144,4 @@ entries:
     urls:
     - https://github.com/chgl/hapi-fhir-jpaserver-starter/releases/download/helm-v0.11.1/hapi-fhir-jpaserver-0.11.1.tgz
     version: 0.11.1
-generated: "2023-10-23T22:00:29.038345662Z"
+generated: "2023-10-28T15:22:44.713875505Z"
