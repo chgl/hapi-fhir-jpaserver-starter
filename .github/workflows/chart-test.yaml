@@ -10,7 +10,7 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-24.04
-    container: quay.io/helmpack/chart-testing:v3.11.0@sha256:f2fd21d30b64411105c7eafb1862783236a219d29f2292219a09fe94ca78ad2a
+    container: quay.io/helmpack/chart-testing:v3.14.0@sha256:425ff3058dfc192fffb94e471e732b9bc995c375df963eba417ff01aea594e83
     steps:
       - name: Install helm-docs
         working-directory: /tmp
@@ -51,7 +51,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
+        uses: helm/chart-testing-action@6ec842c01de15ebb84c8627d2744a0c2f2755c9f # v2.8.0
 
       - name: Run chart-testing (list-changed)
         id: list-changed
@@ -71,3 +71,40 @@ jobs:
       - name: Run chart-testing (install)
         run: ct install --config .github/ct/config.yaml
         if: ${{ steps.list-changed.outputs.changed == 'true' }}
+
+  push-oci:
+    name: Push chart to GHCR (OCI)
+    runs-on: ubuntu-24.04
+    needs:
+      - lint
+      - test
+    # Only push for PRs from the same repo (not forks), where the GITHUB_TOKEN
+    # is guaranteed to have write access to packages.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Update chart dependencies
+        run: helm dependency update charts/hapi-fhir-jpaserver
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }} --password-stdin
+
+      - name: Package and push chart
+        run: |
+          set -euo pipefail
+
+          CHART_DIR=charts/hapi-fhir-jpaserver
+          CHART_VERSION=$(grep '^version:' "$CHART_DIR/Chart.yaml" | awk '{print $2}')
+          PR_VERSION="${CHART_VERSION}-pr${{ github.event.pull_request.number }}+sha.${GITHUB_SHA::7}"
+          OCI_REPO="oci://ghcr.io/${GITHUB_REPOSITORY,,}/charts"
+
+          mkdir -p /tmp/chart-out
+          helm package "$CHART_DIR" --version "$PR_VERSION" --destination /tmp/chart-out
+          helm push "/tmp/chart-out/hapi-fhir-jpaserver-${PR_VERSION}.tgz" "$OCI_REPO"
+
+          echo "Pushed to ${OCI_REPO}/hapi-fhir-jpaserver:$(echo "$PR_VERSION" | tr + _)" >> "$GITHUB_STEP_SUMMARY"
