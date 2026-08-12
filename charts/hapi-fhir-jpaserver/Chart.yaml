@@ -24,4 +24,4 @@ annotations:
     # When using the list of objects option the valid supported kinds are
     # added, changed, deprecated, removed, fixed, and security.
     - kind: changed
-      description: "BREAKING CHANGE: Migrated from the Bitnami sub-chart to Cloudpirates Postgres chart. This may require changes to your values.yaml under the new `postgres`-key."
+      description: "a quick test change"
