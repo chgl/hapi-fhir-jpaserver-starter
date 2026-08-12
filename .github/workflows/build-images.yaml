@@ -12,13 +12,30 @@ on:
       - "charts/**"
 env:
   IMAGES: docker.io/hapiproject/hapi
+  GHCR_IMAGE: ghcr.io/${{ github.repository }}
   PLATFORMS: linux/amd64,linux/arm64/v8
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
     steps:
+      - name: Check if PR is from the same repo (not a fork)
+        id: same_repo
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] && \
+             [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
+            echo "push_ghcr=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "push_ghcr=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set GHCR image name
+        run: echo "GHCR_IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
       - name: Container meta for default (distroless) image
         id: docker_meta
         uses: docker/metadata-action@v5
@@ -26,7 +43,15 @@ jobs:
           images: ${{ env.IMAGES }}
           tags: |
             type=match,pattern=image/(.*),group=1,enable=${{github.event_name != 'pull_request'}}
-           
+
+
+      - name: Container meta for GHCR default (distroless) image
+        id: docker_ghcr_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.GHCR_IMAGE }}
+          tags: |
+            type=ref,event=pr,enable=${{ steps.same_repo.outputs.push_ghcr == 'true' }}
 
       - name: Container meta for tomcat image
         id: docker_tomcat_meta
@@ -35,6 +60,16 @@ jobs:
           images: ${{ env.IMAGES }}
           tags: |
             type=match,pattern=image/(.*),group=1,enable=${{github.event_name != 'pull_request'}}
+          flavor: |
+            suffix=-tomcat,onlatest=true
+
+      - name: Container meta for GHCR tomcat image
+        id: docker_ghcr_tomcat_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.GHCR_IMAGE }}
+          tags: |
+            type=ref,event=pr,enable=${{ steps.same_repo.outputs.push_ghcr == 'true' }}
           flavor: |
             suffix=-tomcat,onlatest=true
 
@@ -51,6 +86,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        if: steps.same_repo.outputs.push_ghcr == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
@@ -65,8 +108,10 @@ jobs:
         with:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.docker_meta.outputs.tags }}
+          push: ${{ github.event_name != 'pull_request' || steps.same_repo.outputs.push_ghcr == 'true' }}
+          tags: |
+            ${{ steps.docker_meta.outputs.tags }}
+            ${{ steps.docker_ghcr_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           platforms: ${{ env.PLATFORMS }}
           target: default
@@ -77,8 +122,10 @@ jobs:
         with:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.docker_tomcat_meta.outputs.tags }}
+          push: ${{ github.event_name != 'pull_request' || steps.same_repo.outputs.push_ghcr == 'true' }}
+          tags: |
+            ${{ steps.docker_tomcat_meta.outputs.tags }}
+            ${{ steps.docker_ghcr_tomcat_meta.outputs.tags }}
           labels: ${{ steps.docker_tomcat_meta.outputs.labels }}
           platforms: ${{ env.PLATFORMS }}
           target: tomcat
