@@ -10,7 +10,7 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-24.04
-    container: quay.io/helmpack/chart-testing:v3.11.0@sha256:f2fd21d30b64411105c7eafb1862783236a219d29f2292219a09fe94ca78ad2a
+    container: quay.io/helmpack/chart-testing:v3.14.0@sha256:425ff3058dfc192fffb94e471e732b9bc995c375df963eba417ff01aea594e83
     steps:
       - name: Install helm-docs
         working-directory: /tmp
@@ -51,7 +51,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
+        uses: helm/chart-testing-action@6ec842c01de15ebb84c8627d2744a0c2f2755c9f # v2.8.0
 
       - name: Run chart-testing (list-changed)
         id: list-changed
