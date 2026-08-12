@@ -71,3 +71,40 @@ jobs:
       - name: Run chart-testing (install)
         run: ct install --config .github/ct/config.yaml
         if: ${{ steps.list-changed.outputs.changed == 'true' }}
+
+  push-oci:
+    name: Push chart to GHCR (OCI)
+    runs-on: ubuntu-24.04
+    needs:
+      - lint
+      - test
+    # Only push for PRs from the same repo (not forks), where the GITHUB_TOKEN
+    # is guaranteed to have write access to packages.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Update chart dependencies
+        run: helm dependency update charts/hapi-fhir-jpaserver
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }} --password-stdin
+
+      - name: Package and push chart
+        run: |
+          set -euo pipefail
+
+          CHART_DIR=charts/hapi-fhir-jpaserver
+          CHART_VERSION=$(grep '^version:' "$CHART_DIR/Chart.yaml" | awk '{print $2}')
+          PR_VERSION="${CHART_VERSION}-pr${{ github.event.pull_request.number }}+sha.${GITHUB_SHA::7}"
+          OCI_REPO="oci://ghcr.io/${GITHUB_REPOSITORY,,}/charts"
+
+          mkdir -p /tmp/chart-out
+          helm package "$CHART_DIR" --version "$PR_VERSION" --destination /tmp/chart-out
+          helm push "/tmp/chart-out/hapi-fhir-jpaserver-${PR_VERSION}.tgz" "$OCI_REPO"
+
+          echo "Pushed to ${OCI_REPO}/hapi-fhir-jpaserver:$(echo "$PR_VERSION" | tr + _)" >> "$GITHUB_STEP_SUMMARY"
